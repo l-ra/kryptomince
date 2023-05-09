@@ -1,73 +1,137 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" /><!--<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:100,300,400,700&amp;subset=latin-ext" rel="stylesheet"> -->
-    <meta charset="UTF-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <!--<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:100,300,400,700&amp;subset=latin-ext" rel="stylesheet"> -->
+    <meta charset="UTF-8" />
     <title>Hazení mincxí</title>
   </head>
   <body>
     <h1>Házení kryptomincí</h1>
-    <input id="block-no-inp" type="number">
+    <input id="block-no-inp" type="number" />
     <button onclick="displayCoinFlipOutcome()">Hod !</button>
-<p>
-Rozhoduje hodnota poslední číslice 
-hashe aktuálního bloku kryptoměny Ethereum
-<br />
-Každých cca 10 sekund vznikne nová 
-nepředvídatelná náhodná hodnota.
-<br/>
-Konkrétní číslo bloku je možné vyplnit, výsledek budoucího bloku se objeví až bude k dispozici.
-</p>
-    <pre>suda  vyhra:  0,2,4,6,8,a,c,e
+    <p>
+      Rozhoduje hodnota poslední číslice hashe aktuálního bloku kryptoměny
+      Ethereum
+      <br />
+      Každých cca 10 sekund vznikne nová nepředvídatelná náhodná hodnota.
+      <br />
+      Konkrétní číslo bloku je možné vyplnit, výsledek budoucího bloku se objeví
+      až bude k dispozici.
+    </p>
+    <pre>
+suda  vyhra:  0,2,4,6,8,a,c,e
 licha prohra: 1,3,5,7,9,b,d,f
-</pre>
-    <div id="result" style="display: none;">
+</pre
+    >
+    <div id="result" style="display: none">
       <p>Číslo bloku: <span id="block-no"></span></p>
       <p>Hash: <span id="block-hash"></span></p>
-      <img style="width: 200px; height: 200px;" id="coin-flip-image" src="nic.png" alt="">
+      <img
+        style="width: 200px; height: 200px"
+        id="coin-flip-image"
+        src="nic.png"
+        alt=""
+      />
       <p id="coin-flip-text"></p>
-      <p style="position:fixed;bottom:0px;right:5px; margin: 5px;color: gray;font-size:8pt;">Powered by <a href="https://etherscan.io">Etherscan.io</a> APIs </p>
+      <p
+        style="
+          position: fixed;
+          bottom: 0px;
+          right: 5px;
+          margin: 5px;
+          color: gray;
+          font-size: 8pt;
+        "
+      >
+        Powered by <a href="https://etherscan.io">Etherscan.io</a> APIs
+      </p>
     </div>
     <script>
       //const apikey = localStorage['apikey']
       async function getLatestBlockHash() {
         //if (!apikey) return ["0","Chybi nastaveni"]
         //const response = await fetch(`https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${apikey}`);
-	const response = await fetch(`/block-number.php`);
+        const response = await fetch(`/block-number.php`);
         const result = await response.json();
         let blockNumber = result.result;
-        if (document.getElementById('block-no-inp').value){
-	   blockNumber = `0x${BigInt(document.getElementById('block-no-inp').value).toString(16)}`
+        if (document.getElementById("block-no-inp").value) {
+          blockNumber = `0x${BigInt(
+            document.getElementById("block-no-inp").value
+          ).toString(16)}`;
         }
         //const blockResponse = await fetch(`https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=${blockNumber}&boolean=true&apikey=${apikey}`);
-	const blockResponse = await fetch(`/block-by-number.php?block_no=${blockNumber}`);
+        const blockResponse = await fetch(
+          `/block-by-number.php?block_no=${blockNumber}`
+        );
         const blockResult = await blockResponse.json();
         if (blockResult.result)
-        	return [blockResult.result.number,blockResult.result.hash];
-        else 
-        	return [0,`výsledek ještě není dostupný`];
+          return [blockResult.result.number, blockResult.result.hash];
+        else {
+          return [blockNumber, "hash neni k dispozici"];
+        }
       }
 
-      function simulateCoinFlip(hash) {
+      async function simulateCoinFlip(blockNumber, hash) {
         if (!hash.startsWith("0x")) {
-		return ["Ještě není k dispozici, hazej znovu.","clock-ticking.gif"]
-	}
+          if (blockNumber.startsWith('0x')) {
+            blockNumber = BigInt(blockNumber).toString(10);
+          }
+          const countdownResp = await fetch(
+            `/block-countdown.php?block_no=${blockNumber}`
+          );
+          const countdown = await countdownResp.json();
+          const secToGo = countdown.result.EstimateTimeInSec;
+          const minToGo = Math.round(10*secToGo/60)/10;
+          const hoursToGo = Math.round(10*minToGo/60)/10;
+          if (hoursToGo>1) {
+            msg = ` ${hoursToGo} hodin`
+          }
+          else {
+            if (minToGo>1) {
+              msg = ` ${minToGo} minut`
+            }
+            else {
+              msg= ` ${secToGo} sekund`
+            }
+          }
+          return [`výsledek ještě není dostupný - bude za cca ${msg}`, "clock-ticking.gif"];
+        }
         const binaryString = BigInt("" + hash).toString(2);
-        const coinFlipOutcome = parseInt(binaryString.charAt(binaryString.length - 1));
-        return coinFlipOutcome === 0 ? ["Sudá - Vyhráváš","up.png"] : ["Lichá - Prohráváš","down.png"];
+        const coinFlipOutcome = parseInt(
+          binaryString.charAt(binaryString.length - 1)
+        );
+        return coinFlipOutcome === 0
+          ? ["Sudá - Vyhráváš", "up.png"]
+          : ["Lichá - Prohráváš", "down.png"];
       }
 
       async function displayCoinFlipOutcome() {
-        document.getElementById("result").style.display="block"
-        document.getElementById("coin-flip-image").src="loading.gif"
+        document.getElementById("result").style.display = "block";
+        document.getElementById("coin-flip-image").src = "loading.gif";
         const [latestBlockNo, latestBlockHash] = await getLatestBlockHash();
-        document.getElementById("block-no").textContent = parseInt(latestBlockNo);
-        document.getElementById("block-hash").textContent = `...${latestBlockHash.slice(-30)}`;
-        const coinFlipOutcome = simulateCoinFlip(latestBlockHash);
-       	const coinImage = coinFlipOutcome[1];
-       	document.getElementById("coin-flip-image").src = coinImage;
-       	document.getElementById("coin-flip-text").textContent = coinFlipOutcome[0];
+        document.getElementById("block-no").textContent =
+          parseInt(latestBlockNo);
+        document.getElementById(
+          "block-hash"
+        ).textContent = `...${latestBlockHash.slice(-30)}`;
+        const coinFlipOutcome = await simulateCoinFlip(latestBlockNo,latestBlockHash);
+        const coinImage = coinFlipOutcome[1];
+        document.getElementById("coin-flip-image").src = coinImage;
+        document.getElementById("coin-flip-text").textContent =
+          coinFlipOutcome[0];
       }
+
+      window.addEventListener("load", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const blockNo = urlParams.get("block_no");
+        if (blockNo) {
+          document.getElementById("block-no-inp").value = blockNo;
+        }
+      });
     </script>
   </body>
 </html>

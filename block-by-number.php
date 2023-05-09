@@ -9,6 +9,7 @@ if ($blockNo && preg_match("/^0x[0-9a-fA-F]+$/",$blockNo)) {
 	if ( file_exists($blockCacheFile)){
 		$response = file_get_contents($blockCacheFile);
 	} else {
+		file_put_contents($apiLogFile,sprintf(""),FILE_APPEND);
 		$response = file_get_contents(sprintf("https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=%s&boolean=true&apikey=%s",$blockNo,$apikey));
 		if (preg_match("/".$blockNo."/",$response)){
 			# have result - store it

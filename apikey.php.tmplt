@@ -1,5 +1,7 @@
 <?php
 
 $apikey="etherscan api key";
+$cacheDir="/working/somewhere/";
+$apiLogFile = $cacheDir . "api-call.log";
 
 ?>
